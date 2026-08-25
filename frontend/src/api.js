@@ -3,8 +3,8 @@
 // API Service
 // --------------------------------------------------
 
-// Flask backend URL
-const API_BASE_URL = "http://127.0.0.1:5000";
+// Flask backend URL, configurable for local and deployed environments.
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:5000";
 
 
 // --------------------------------------------------
