@@ -1,0 +1,74 @@
+[
+  {
+    "id": "KB-001",
+    "category": "account_access",
+    "title": "Resetting your password",
+    "content": "If you forgot your CloudDesk password, go to the login page and select 'Forgot Password'. Enter your registered email address and CloudDesk will send you a password reset link. The reset link expires after 30 minutes."
+  },
+  {
+    "id": "KB-002",
+    "category": "account_access",
+    "title": "Account locked after failed login attempts",
+    "content": "For security reasons, a CloudDesk account is temporarily locked after five unsuccessful login attempts. Wait 15 minutes before trying again. If you still cannot access your account, contact CloudDesk support."
+  },
+  {
+    "id": "KB-003",
+    "category": "account_access",
+    "title": "Two-factor authentication",
+    "content": "Two-factor authentication can be enabled from Settings > Security. CloudDesk supports authenticator applications for two-factor authentication."
+  },
+  {
+    "id": "KB-004",
+    "category": "billing",
+    "title": "Updating payment information",
+    "content": "You can update your payment method by going to Settings > Billing > Payment Method. CloudDesk accepts major credit and debit cards."
+  },
+  {
+    "id": "KB-005",
+    "category": "billing",
+    "title": "Understanding your invoice",
+    "content": "CloudDesk invoices are available from Settings > Billing > Invoices. Each invoice contains the subscription plan, billing period, taxes, discounts, and total amount charged."
+  },
+  {
+    "id": "KB-006",
+    "category": "billing",
+    "title": "Canceling a subscription",
+    "content": "You can cancel your CloudDesk subscription from Settings > Billing > Subscription. After cancellation, your account remains active until the end of the current billing period."
+  },
+  {
+    "id": "KB-007",
+    "category": "billing",
+    "title": "Refund policy",
+    "content": "CloudDesk subscription payments are generally non-refundable. If you believe you were incorrectly charged, contact the billing support team with your invoice number so the charge can be reviewed."
+  },
+  {
+    "id": "KB-008",
+    "category": "technical",
+    "title": "Dashboard is not loading",
+    "content": "If the CloudDesk dashboard is not loading, first refresh the page. If the problem continues, clear your browser cache and try opening CloudDesk in an incognito window. If the issue persists, contact technical support."
+  },
+  {
+    "id": "KB-009",
+    "category": "technical",
+    "title": "API authentication",
+    "content": "CloudDesk API requests require an API key. API keys can be created from Settings > Developer > API Keys. Never share your API key publicly."
+  },
+  {
+    "id": "KB-010",
+    "category": "technical",
+    "title": "API rate limits",
+    "content": "CloudDesk API requests are limited to 100 requests per minute for the standard plan. Requests above this limit may receive a rate limit response."
+  },
+  {
+    "id": "KB-011",
+    "category": "technical",
+    "title": "Browser compatibility",
+    "content": "CloudDesk supports the latest versions of Chrome, Edge, Firefox, and Safari. If you experience unexpected behavior, update your browser to the latest available version."
+  },
+  {
+    "id": "KB-012",
+    "category": "technical",
+    "title": "Integration troubleshooting",
+    "content": "If a CloudDesk integration is not working, verify that the integration is enabled, check that the API key is valid, and review the integration logs from Settings > Developer > Integrations."
+  }
+]
