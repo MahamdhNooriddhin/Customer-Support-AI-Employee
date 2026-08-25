@@ -204,7 +204,7 @@ if __name__ == "__main__":
     ]
 
 
-    print("\nCloudDesk RAG Retriever")
+    print("\nCustomer-Support-AI-Employee RAG Retriever")
     print("=" * 50)
 
 

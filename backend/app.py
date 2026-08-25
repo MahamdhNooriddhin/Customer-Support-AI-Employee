@@ -1,5 +1,5 @@
 """
-CloudDesk Support Chatbot
+Customer-Support-AI-Employee
 Main Flask API
 
 Responsibilities:
@@ -37,7 +37,7 @@ CORS(app)
 # Configuration
 # --------------------------------------------------
 
-APP_NAME = "CloudDesk Support Chatbot"
+APP_NAME = "Customer-Support-AI-Employee"
 APP_VERSION = "1.0.0"
 
 
@@ -374,7 +374,7 @@ if __name__ == "__main__":
 
     print()
     print("=" * 55)
-    print("CloudDesk Support Chatbot")
+    print("Customer-Support-AI-Employee")
     print("=" * 55)
     print("API running at:")
     print("http://127.0.0.1:5000")

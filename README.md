@@ -8,7 +8,7 @@ low-confidence or out-of-scope requests to human support.
 
 ## 1. Project Overview
 
-Customer-Support-AI employee is a fictional SaaS customer-support system.
+Customer-Support-AI-Employee is a fictional SaaS customer-support system.
 
 The chatbot performs three main tasks:
 

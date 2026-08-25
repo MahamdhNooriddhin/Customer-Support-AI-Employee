@@ -15,7 +15,7 @@ function App() {
             id: 1,
             role: "assistant",
             content:
-                "Hi! I'm CloudDesk's AI Support Assistant. I can help with billing, technical issues, and account access.",
+                "Hi! I'm Customer-Support-AI-Employee. I can help with billing, technical issues, and account access.",
             type: "normal",
             time: getCurrentTime()
         }
@@ -159,7 +159,7 @@ function App() {
                 role: "assistant",
 
                 content:
-                    "I'm unable to connect to the CloudDesk support service right now. Please make sure the backend server is running and try again.",
+                    "I'm unable to connect to the Customer-Support-AI-Employee service right now. Please make sure the backend server is running and try again.",
 
                 type: "error",
 
@@ -221,13 +221,13 @@ function App() {
         {
             label: "Dashboard problem",
             message:
-                "The CloudDesk dashboard is not loading."
+                "The Customer-Support-AI-Employee is not loading."
         },
 
         {
             label: "API help",
             message:
-                "How do I authenticate with the CloudDesk API?"
+                "How do I authenticate with the Customer-Support-AI-Employee API?"
         }
 
     ];

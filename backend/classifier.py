@@ -252,7 +252,7 @@ if __name__ == "__main__":
     ]
 
 
-    print("\nCloudDesk Ticket Classifier")
+    print("\nCustomer-Support-AI-Employee Ticket Classifier")
     print("=" * 55)
 
 
