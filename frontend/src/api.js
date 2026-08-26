@@ -3,11 +3,12 @@ const API_URL =
     "https://customer-support-ai-employee-d5jj.onrender.com";
 
 
-export async function sendMessage(message) {
-
+export async function sendChatMessage(message) {
     try {
-
-        console.log("Sending request to:", `${API_URL}/api/chat`);
+        console.log(
+            "Sending request to:",
+            `${API_URL}/api/chat`
+        );
 
         const response = await fetch(
             `${API_URL}/api/chat`,
@@ -26,7 +27,6 @@ export async function sendMessage(message) {
 
 
         if (!response.ok) {
-
             const errorText = await response.text();
 
             console.error(
@@ -43,7 +43,10 @@ export async function sendMessage(message) {
 
         const data = await response.json();
 
-        console.log("Chat API response:", data);
+        console.log(
+            "Chat API response:",
+            data
+        );
 
         return data;
 
