@@ -1,102 +1,59 @@
-// --------------------------------------------------
-// Customer-Support-AI-Employee
-// API Service
-// --------------------------------------------------
-
-// Flask backend URL, configurable for local and deployed environments.
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:5000";
+const API_URL =
+    import.meta.env.VITE_API_URL ||
+    "https://customer-support-ai-employee-d5jj.onrender.com";
 
 
-// --------------------------------------------------
-// Send Chat Message
-// --------------------------------------------------
+export async function sendMessage(message) {
 
-export async function sendChatMessage(message) {
+    try {
 
-    const response = await fetch(
-        `${API_BASE_URL}/api/chat`,
-        {
-            method: "POST",
+        console.log("Sending request to:", `${API_URL}/api/chat`);
 
-            headers: {
-                "Content-Type": "application/json"
-            },
+        const response = await fetch(
+            `${API_URL}/api/chat`,
+            {
+                method: "POST",
 
-            body: JSON.stringify({
-                message: message
-            })
-        }
-    );
+                headers: {
+                    "Content-Type": "application/json"
+                },
 
-
-    // ----------------------------------------------
-    // Handle HTTP Errors
-    // ----------------------------------------------
-
-    if (!response.ok) {
-
-        let errorMessage =
-            "Unable to communicate with the support server.";
-
-        try {
-
-            const errorData =
-                await response.json();
-
-            if (errorData.error) {
-                errorMessage = errorData.error;
+                body: JSON.stringify({
+                    message: message
+                })
             }
+        );
 
-        } catch {
-            // Ignore JSON parsing errors
+
+        if (!response.ok) {
+
+            const errorText = await response.text();
+
+            console.error(
+                "Backend response:",
+                response.status,
+                errorText
+            );
+
+            throw new Error(
+                `Backend returned ${response.status}`
+            );
         }
 
 
-        throw new Error(errorMessage);
-    }
+        const data = await response.json();
 
+        console.log("Chat API response:", data);
 
-    // ----------------------------------------------
-    // Parse JSON Response
-    // ----------------------------------------------
+        return data;
 
-    const data = await response.json();
+    } catch (error) {
 
-
-    // ----------------------------------------------
-    // Validate API Response
-    // ----------------------------------------------
-
-    if (!data.success) {
-
-        throw new Error(
-            data.error ||
-            "The support service returned an invalid response."
+        console.error(
+            "Chat API error:",
+            error
         );
+
+        throw error;
     }
-
-
-    return data;
-}
-
-
-// --------------------------------------------------
-// Check Backend Health
-// --------------------------------------------------
-
-export async function checkBackendHealth() {
-
-    const response = await fetch(
-        `${API_BASE_URL}/api/health`
-    );
-
-
-    if (!response.ok) {
-        throw new Error(
-            "Backend health check failed."
-        );
-    }
-
-
-    return await response.json();
 }
