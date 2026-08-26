@@ -10,8 +10,9 @@ Responsibilities:
 - Return grounded responses
 """
 
-
 import os
+import random
+from datetime import datetime
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -24,45 +25,80 @@ from escalation import (
 )
 
 
-# --------------------------------------------------
+# ============================================================
 # Flask Application
-# --------------------------------------------------
+# ============================================================
 
 app = Flask(__name__)
 
-# Allow the React frontend to communicate with
-# the Flask backend during local development.
-CORS(app)
+
+# ============================================================
+# CORS
+# ============================================================
+
+# Allow the React frontend to communicate with Flask.
+#
+# This is intentionally open for the assessment/demo.
+# In production, restrict this to your frontend domain.
+
+CORS(
+    app,
+    resources={
+        r"/api/*": {
+            "origins": "*"
+        }
+    }
+)
 
 
-# --------------------------------------------------
+# ============================================================
 # Configuration
-# --------------------------------------------------
+# ============================================================
 
 APP_NAME = "Customer-Support-AI-Employee"
 APP_VERSION = "1.0.0"
 
 
-# --------------------------------------------------
+# ============================================================
+# Root Route
+# ============================================================
+
+@app.route("/", methods=["GET"])
+def home():
+    """
+    Root endpoint.
+    """
+
+    return jsonify({
+        "success": True,
+        "service": APP_NAME,
+        "version": APP_VERSION,
+        "status": "running",
+        "message": "Customer Support AI Employee API is running."
+    })
+
+
+# ============================================================
 # Health Check
-# --------------------------------------------------
+# ============================================================
 
 @app.route("/api/health", methods=["GET"])
 def health_check():
     """
-    Check whether the backend is running.
+    Health check endpoint used by Render and for debugging.
     """
 
     return jsonify({
+        "success": True,
         "status": "ok",
         "service": APP_NAME,
         "version": APP_VERSION
     })
 
 
-# --------------------------------------------------
+# ============================================================
 # Chat Endpoint
-# --------------------------------------------------
+# ============================================================
 
 @app.route("/api/chat", methods=["POST"])
 def chat():
@@ -76,288 +112,469 @@ def chat():
     }
     """
 
-    # ----------------------------------------------
-    # Validate Request
-    # ----------------------------------------------
+    try:
 
-    data = request.get_json(silent=True)
+        # ----------------------------------------------------
+        # 1. Validate request
+        # ----------------------------------------------------
 
+        data = request.get_json(silent=True)
 
-    if not data:
+        if not data:
 
-        return jsonify({
-            "success": False,
-            "error": "Request body must contain JSON."
-        }), 400
-
-
-    message = data.get("message", "")
+            return jsonify({
+                "success": False,
+                "error": "Request body must contain JSON."
+            }), 400
 
 
-    if not isinstance(message, str):
-
-        return jsonify({
-            "success": False,
-            "error": "Message must be a string."
-        }), 400
+        message = data.get("message", "")
 
 
-    message = message.strip()
+        if not isinstance(message, str):
+
+            return jsonify({
+                "success": False,
+                "error": "Message must be a string."
+            }), 400
 
 
-    if not message:
-
-        return jsonify({
-            "success": False,
-            "error": "Message cannot be empty."
-        }), 400
+        message = message.strip()
 
 
-    # ----------------------------------------------
-    # Step 1: Classify Ticket
-    # ----------------------------------------------
+        if not message:
 
-    classification = classify_ticket(message)
-
-
-    # ----------------------------------------------
-    # Step 2: Retrieve Relevant Documents
-    # ----------------------------------------------
-
-    retrieval_results = get_rag_context(
-        message,
-        top_k=3
-    )
+            return jsonify({
+                "success": False,
+                "error": "Message cannot be empty."
+            }), 400
 
 
-    # ----------------------------------------------
-    # Step 3: Evaluate Confidence
-    # ----------------------------------------------
+        # ----------------------------------------------------
+        # 2. Classify ticket
+        # ----------------------------------------------------
 
-    decision = evaluate_query(
-        classification,
-        retrieval_results
-    )
+        classification = classify_ticket(message)
 
 
-    # ----------------------------------------------
-    # Step 4: Generate Response
-    # ----------------------------------------------
+        # ----------------------------------------------------
+        # 3. Retrieve relevant knowledge-base documents
+        # ----------------------------------------------------
 
-    action = decision["action"]
-
-
-    # ----------------------------------------------
-    # ANSWER
-    # ----------------------------------------------
-
-    if action == "answer":
-
-        best_document = retrieval_results[0]
-
-
-        response_message = (
-            best_document["content"]
+        retrieval_results = get_rag_context(
+            message,
+            top_k=3
         )
 
 
-        return jsonify({
+        # Make sure retrieval results are usable.
 
-            "success": True,
-
-            "action": "answer",
-
-            "message": response_message,
-
-            "category":
-                classification["category"],
-
-            "classification_confidence":
-                classification["confidence"],
-
-            "retrieval_confidence":
-                best_document["score"],
-
-            "source": {
-                "id": best_document["id"],
-                "title": best_document["title"]
-            },
-
-            "reason": decision["reason"],
-
-            "escalated": False
-
-        })
+        if retrieval_results is None:
+            retrieval_results = []
 
 
-    # ----------------------------------------------
-    # CLARIFICATION
-    # ----------------------------------------------
+        # ----------------------------------------------------
+        # 4. Evaluate confidence / escalation
+        # ----------------------------------------------------
 
-    if action == "clarify":
+        decision = evaluate_query(
+            classification,
+            retrieval_results
+        )
 
-        category = classification["category"]
+
+        action = decision.get(
+            "action",
+            "escalate"
+        )
 
 
-        if category == "billing":
+        # ----------------------------------------------------
+        # 5. ANSWER
+        # ----------------------------------------------------
 
-            clarification_message = (
-                "Could you provide a little more detail "
-                "about the billing issue? For example, "
-                "are you asking about a payment, invoice, "
-                "refund, or subscription?"
+        if action == "answer":
+
+            if not retrieval_results:
+
+                return jsonify({
+
+                    "success": True,
+
+                    "action": "escalate",
+
+                    "message": (
+                        "I couldn't find a sufficiently relevant "
+                        "answer in the CloudDesk knowledge base. "
+                        "I'll escalate this request to a human "
+                        "support agent."
+                    ),
+
+                    "category":
+                        classification.get(
+                            "category",
+                            "unknown"
+                        ),
+
+                    "classification_confidence":
+                        classification.get(
+                            "confidence",
+                            0
+                        ),
+
+                    "retrieval_confidence": 0,
+
+                    "source": None,
+
+                    "reason":
+                        "No relevant knowledge-base document was found.",
+
+                    "reason_code":
+                        "NO_RETRIEVAL_RESULT",
+
+                    "escalated": True,
+
+                    "ticket": {
+                        "id": create_ticket_id(),
+                        "status": "human_review",
+                        "category":
+                            classification.get(
+                                "category",
+                                "unknown"
+                            )
+                    }
+
+                })
+
+
+            best_document = retrieval_results[0]
+
+
+            response_message = best_document.get(
+                "content",
+                "I couldn't find an answer in the knowledge base."
             )
 
 
-        elif category == "technical":
+            return jsonify({
 
-            clarification_message = (
-                "Could you describe the technical problem "
-                "in a little more detail? For example, "
-                "is a page not loading, are you seeing an "
-                "error, or is an integration not working?"
+                "success": True,
+
+                "action": "answer",
+
+                "message": response_message,
+
+                "category":
+                    classification.get(
+                        "category",
+                        "unknown"
+                    ),
+
+                "classification_confidence":
+                    classification.get(
+                        "confidence",
+                        0
+                    ),
+
+                "retrieval_confidence":
+                    best_document.get(
+                        "score",
+                        0
+                    ),
+
+                "source": {
+                    "id":
+                        best_document.get(
+                            "id",
+                            "unknown"
+                        ),
+
+                    "title":
+                        best_document.get(
+                            "title",
+                            "Knowledge Base"
+                        )
+                },
+
+                "reason":
+                    decision.get(
+                        "reason",
+                        "Answer found in the knowledge base."
+                    ),
+
+                "escalated": False
+
+            })
+
+
+        # ----------------------------------------------------
+        # 6. CLARIFICATION
+        # ----------------------------------------------------
+
+        if action == "clarify":
+
+            category = classification.get(
+                "category",
+                "unknown"
             )
 
 
-        elif category == "account_access":
+            if category == "billing":
 
-            clarification_message = (
-                "Could you tell me more about the account "
-                "access problem? For example, are you "
-                "having trouble logging in, resetting your "
-                "password, or completing verification?"
-            )
-
-
-        else:
-
-            clarification_message = (
-                "Could you provide a little more information "
-                "about the problem so I can determine how "
-                "best to help?"
-            )
+                clarification_message = (
+                    "Could you provide a little more detail "
+                    "about the billing issue? For example, "
+                    "are you asking about a payment, invoice, "
+                    "refund, or subscription?"
+                )
 
 
-        return jsonify({
+            elif category == "technical":
 
-            "success": True,
-
-            "action": "clarify",
-
-            "message":
-                clarification_message,
-
-            "category":
-                classification["category"],
-
-            "classification_confidence":
-                classification["confidence"],
-
-            "retrieval_confidence":
-                decision["retrieval_confidence"],
-
-            "source": None,
-
-            "reason":
-                decision["reason"],
-
-            "escalated": False
-
-        })
+                clarification_message = (
+                    "Could you describe the technical problem "
+                    "in a little more detail? For example, "
+                    "is a page not loading, are you seeing an "
+                    "error, or is an integration not working?"
+                )
 
 
-    # ----------------------------------------------
-    # ESCALATION
-    # ----------------------------------------------
+            elif category == "account_access":
 
-    if action == "escalate":
+                clarification_message = (
+                    "Could you tell me more about the account "
+                    "access problem? For example, are you "
+                    "having trouble logging in, resetting your "
+                    "password, or completing verification?"
+                )
 
-        escalation_message = (
-            build_escalation_message(
+
+            else:
+
+                clarification_message = (
+                    "Could you provide a little more information "
+                    "about the problem so I can determine how "
+                    "best to help?"
+                )
+
+
+            return jsonify({
+
+                "success": True,
+
+                "action": "clarify",
+
+                "message": clarification_message,
+
+                "category":
+                    classification.get(
+                        "category",
+                        "unknown"
+                    ),
+
+                "classification_confidence":
+                    classification.get(
+                        "confidence",
+                        0
+                    ),
+
+                "retrieval_confidence":
+                    decision.get(
+                        "retrieval_confidence",
+                        0
+                    ),
+
+                "source": None,
+
+                "reason":
+                    decision.get(
+                        "reason",
+                        "More information is required."
+                    ),
+
+                "escalated": False
+
+            })
+
+
+        # ----------------------------------------------------
+        # 7. ESCALATION
+        # ----------------------------------------------------
+
+        if action == "escalate":
+
+            escalation_message = build_escalation_message(
                 decision
             )
-        )
 
 
-        # Synthetic ticket ID.
-        # In a real application this would be
-        # generated by a support/ticketing system.
-        ticket_id = create_ticket_id()
+            ticket_id = create_ticket_id()
 
+
+            return jsonify({
+
+                "success": True,
+
+                "action": "escalate",
+
+                "message": escalation_message,
+
+                "category":
+                    classification.get(
+                        "category",
+                        "unknown"
+                    ),
+
+                "classification_confidence":
+                    classification.get(
+                        "confidence",
+                        0
+                    ),
+
+                "retrieval_confidence":
+                    decision.get(
+                        "retrieval_confidence",
+                        0
+                    ),
+
+                "source": None,
+
+                "reason":
+                    decision.get(
+                        "reason",
+                        "Confidence was too low to provide a reliable answer."
+                    ),
+
+                "reason_code":
+                    decision.get(
+                        "reason_code",
+                        "LOW_CONFIDENCE"
+                    ),
+
+                "escalated": True,
+
+                "ticket": {
+
+                    "id": ticket_id,
+
+                    "status": "human_review",
+
+                    "category":
+                        classification.get(
+                            "category",
+                            "unknown"
+                        )
+
+                }
+
+            })
+
+
+        # ----------------------------------------------------
+        # 8. Unknown action
+        # ----------------------------------------------------
 
         return jsonify({
 
-            "success": True,
+            "success": False,
 
             "action": "escalate",
 
-            "message":
-                escalation_message,
+            "message": (
+                "I couldn't confidently determine how to "
+                "handle your request, so I'm escalating it "
+                "to a human support agent."
+            ),
 
             "category":
-                classification["category"],
+                classification.get(
+                    "category",
+                    "unknown"
+                ),
 
             "classification_confidence":
-                classification["confidence"],
+                classification.get(
+                    "confidence",
+                    0
+                ),
 
             "retrieval_confidence":
-                decision["retrieval_confidence"],
+                decision.get(
+                    "retrieval_confidence",
+                    0
+                ),
 
             "source": None,
 
-            "reason":
-                decision["reason"],
+            "reason": (
+                "The chatbot returned an unsupported "
+                "decision and therefore used the safety fallback."
+            ),
 
-            "reason_code":
-                decision["reason_code"],
+            "reason_code": "UNKNOWN_ACTION",
 
             "escalated": True,
 
             "ticket": {
-                "id": ticket_id,
+
+                "id": create_ticket_id(),
+
                 "status": "human_review",
+
                 "category":
-                    classification["category"]
+                    classification.get(
+                        "category",
+                        "unknown"
+                    )
+
             }
 
         })
 
 
-    # ----------------------------------------------
-    # Safety Fallback
-    # ----------------------------------------------
+    except Exception as error:
 
-    return jsonify({
+        # ----------------------------------------------------
+        # Unexpected server error
+        # ----------------------------------------------------
 
-        "success": False,
-
-        "error": (
-            "The chatbot could not determine "
-            "how to handle this request."
+        print(
+            "CHAT API ERROR:",
+            repr(error)
         )
 
-    }), 500
+
+        return jsonify({
+
+            "success": False,
+
+            "error": "Internal server error.",
+
+            "message": (
+                "I'm temporarily unable to process your "
+                "request. Please try again or contact human "
+                "support."
+            )
+
+        }), 500
 
 
-# --------------------------------------------------
+# ============================================================
 # Synthetic Ticket ID Generator
-# --------------------------------------------------
+# ============================================================
 
 def create_ticket_id():
     """
     Generate a synthetic support ticket ID.
 
     Example:
-        CD-20260825-4821
+        CD-20260826-4821
     """
-
-    from datetime import datetime
-    import random
-
 
     timestamp = datetime.now().strftime(
         "%Y%m%d"
     )
+
 
     random_number = random.randint(
         1000,
@@ -368,26 +585,75 @@ def create_ticket_id():
     return f"CD-{timestamp}-{random_number}"
 
 
-# --------------------------------------------------
+# ============================================================
+# Error Handlers
+# ============================================================
+
+@app.errorhandler(404)
+def not_found(error):
+
+    return jsonify({
+
+        "success": False,
+
+        "error": "Endpoint not found.",
+
+        "available_endpoints": [
+            "/",
+            "/api/health",
+            "/api/chat"
+        ]
+
+    }), 404
+
+
+@app.errorhandler(405)
+def method_not_allowed(error):
+
+    return jsonify({
+
+        "success": False,
+
+        "error": "HTTP method not allowed."
+
+    }), 405
+
+
+# ============================================================
 # Run Application
-# --------------------------------------------------
+# ============================================================
 
 if __name__ == "__main__":
 
+    port = int(
+        os.environ.get(
+            "PORT",
+            5000
+        )
+    )
+
+
     print()
-    print("=" * 55)
-    print("Customer-Support-AI-Employee")
-    print("=" * 55)
-    print("API running at:")
-    print("http://127.0.0.1:5000")
+    print("=" * 60)
+    print(APP_NAME)
+    print("=" * 60)
+    print(f"Version: {APP_VERSION}")
+    print(f"Port: {port}")
     print()
-    print("Health check:")
-    print("http://127.0.0.1:5000/api/health")
-    print("=" * 55)
+    print("Health:")
+    print(f"http://127.0.0.1:{port}/api/health")
+    print()
+    print("Chat:")
+    print(f"http://127.0.0.1:{port}/api/chat")
+    print("=" * 60)
 
 
     app.run(
+
         host="0.0.0.0",
-        port=int(os.environ.get("PORT", 5000)),
-        debug=True
+
+        port=port,
+
+        debug=False
+
     )
